@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<!-- saved from url=(0054)file:///Users/liamdemb/Downloads/wa-particle-loop.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WA Particle Loop Playground</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --panel-width: 340px;
+      --bg: #f4f4f4;
+      --panel-bg: #ffffff;
+      --text: #111;
+      --muted: #666;
+      --border: #ddd;
+      --accent: #111;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr var(--panel-width);
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+
+    .stage {
+      min-height: 100vh;
+      padding: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+    }
+
+    #stageWrap {
+      width: min(78vw, 1100px);
+      height: min(88vh, 900px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #scene {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      display: block;
+    }
+
+    .controls {
+      min-height: 100vh;
+      background: var(--panel-bg);
+      border-left: 1px solid var(--border);
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 22px;
+    }
+
+    .group {
+      margin-bottom: 26px;
+      padding-top: 18px;
+      border-top: 1px solid #eee;
+    }
+
+    .group:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .group h2 {
+      margin: 0 0 14px;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .control {
+      margin-bottom: 18px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .value {
+      font-family: monospace;
+      color: var(--muted);
+    }
+
+    input[type="range"],
+    input[type="number"],
+    select,
+    input[type="color"] {
+      width: 100%;
+    }
+
+    input[type="number"],
+    select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 13px;
+    }
+
+    input[type="color"] {
+      height: 40px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      display: inline-block;
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    button:hover {
+      background: #eee;
+    }
+
+    button.primary {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+
+    button.primary:hover {
+      background: #222;
+    }
+
+    .stats {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid #eee;
+      background: #fafafa;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .note {
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .status {
+      margin-top: 8px;
+      min-height: 18px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #exportCanvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div id="stageWrap">
+      <svg id="scene" viewBox="-64.98583316802979 -142.40689749606446 670.2317025765856 781.2599248398144" xmlns="http://www.w3.org/2000/svg">
+        <rect id="backgroundRect" x="-64.98583316802979" y="-142.40689749606446" width="670.2317025765856" height="781.2599248398144" fill="#f4f4f4"></rect>
+
+        <g id="baseLayer">
+          <path id="waPath" d="M76.9235 500.895C76.9235 507.247 61.1635 528.683 76.9235 543.768C82.2079 548.826 91.1991 558.853 110.233 558.853C129.267 558.853 147.508 542.974 156.232 542.18C164.955 541.386 174.472 528.683 181.61 528.683C188.748 528.683 210.954 531.065 222.85 531.065C234.746 531.065 250.608 518.362 252.987 513.598C255.366 508.835 276.779 501.807 284.71 501.807C292.641 501.807 302.158 488.192 335.467 488.192C362.115 488.192 384.638 478.665 392.569 473.901C393.362 330.726 394.472 44.376 392.569 44.376C390.189 44.376 367.983 35.6426 367.19 33.2608C366.397 30.8789 350.535 15 344.191 15C337.846 15 304.537 31.6729 301.365 33.2608C298.193 34.8487 287.663 50 280.663 53.5C274.279 56.6921 270.422 69.3242 265.663 72.5C259.319 76.4697 226.815 119.007 222.85 121.389C218.885 123.771 206.196 142.826 200.644 150.765C195.092 158.704 159.404 168.232 152.266 168.232C145.128 168.232 132.439 177.759 118.164 181.729C103.888 185.699 88.0269 192.844 80.8892 192.844C73.7515 192.844 70.5793 211.899 56.3039 211.899C42.0285 211.899 24.5808 247.432 24.5808 253.978C24.5808 259.5 15.0638 276.209 15.0638 286.53C15.0638 296.851 14.2703 303.385 19.0288 314.5C22.0255 321.5 14.2703 333.373 19.0288 341.312C23.7872 349.252 35.6833 367.512 35.6833 373.07C35.6833 378.628 46.7866 388.155 46.7866 396.094C46.7866 404.034 57.8896 410.386 57.8896 422.295C57.8896 434.204 66.6136 454.053 72.9582 465.962C79.3028 477.871 76.9235 494.544 76.9235 500.895Z" fill="none" stroke="none"></path>
+        </g>
+
+        <g id="guideLayer">
+          <path id="baseOutline" fill="none" stroke="#cfcfcf" stroke-width="7.199999999999999" stroke-linecap="round" stroke-linejoin="round" opacity="0" d="M76.9235 500.895C76.9235 507.247 61.1635 528.683 76.9235 543.768C82.2079 548.826 91.1991 558.853 110.233 558.853C129.267 558.853 147.508 542.974 156.232 542.18C164.955 541.386 174.472 528.683 181.61 528.683C188.748 528.683 210.954 531.065 222.85 531.065C234.746 531.065 250.608 518.362 252.987 513.598C255.366 508.835 276.779 501.807 284.71 501.807C292.641 501.807 302.158 488.192 335.467 488.192C362.115 488.192 384.638 478.665 392.569 473.901C393.362 330.726 394.472 44.376 392.569 44.376C390.189 44.376 367.983 35.6426 367.19 33.2608C366.397 30.8789 350.535 15 344.191 15C337.846 15 304.537 31.6729 301.365 33.2608C298.193 34.8487 287.663 50 280.663 53.5C274.279 56.6921 270.422 69.3242 265.663 72.5C259.319 76.4697 226.815 119.007 222.85 121.389C218.885 123.771 206.196 142.826 200.644 150.765C195.092 158.704 159.404 168.232 152.266 168.232C145.128 168.232 132.439 177.759 118.164 181.729C103.888 185.699 88.0269 192.844 80.8892 192.844C73.7515 192.844 70.5793 211.899 56.3039 211.899C42.0285 211.899 24.5808 247.432 24.5808 253.978C24.5808 259.5 15.0638 276.209 15.0638 286.53C15.0638 296.851 14.2703 303.385 19.0288 314.5C22.0255 321.5 14.2703 333.373 19.0288 341.312C23.7872 349.252 35.6833 367.512 35.6833 373.07C35.6833 378.628 46.7866 388.155 46.7866 396.094C46.7866 404.034 57.8896 410.386 57.8896 422.295C57.8896 434.204 66.6136 454.053 72.9582 465.962C79.3028 477.871 76.9235 494.544 76.9235 500.895Z"></path>
+          <line id="entryGuide" x1="505.89467311949335" y1="-62.40689749606446" x2="315.5700378417969" y2="26.342937469482422" stroke="#111111" stroke-width="20" stroke-linecap="round" opacity="0"></line>
+          <line id="exitGuide" x1="334.9212341308594" y1="488.1937255859375" x2="525.2458694085558" y2="399.4438906203906" stroke="#111111" stroke-width="20" stroke-linecap="round" opacity="0"></line>
+          <circle id="entryMarker" r="8" fill="#d22" opacity="0" cx="315.5700378417969" cy="26.342937469482422"></circle>
+          <circle id="exitMarker" r="8" fill="#d22" opacity="0" cx="334.9212341308594" cy="488.1937255859375"></circle>
+        </g>
+
+        <g id="particleLayer"><circle cx="521.4306229053061" cy="401.22296928260505" style="display: none;" r="10" fill="#111111"></circle><circle cx="523.1344815449132" cy="400.4284469505427" style="display: none;" r="10" fill="#111111"></circle><circle cx="524.7748986394416" cy="399.6635078967957" style="display: none;" r="10" fill="#111111"></circle><circle cx="521.1496674912946" cy="401.35398094375864" style="display: none;" r="10" fill="#111111"></circle><circle cx="491.0693120395779" cy="415.38068105091867" style="display: block;" r="10" fill="#111111"></circle><circle cx="455.72330834514855" cy="431.86279325880594" style="display: block;" r="10" fill="#111111"></circle><circle cx="420.3773046507192" cy="448.34490546669326" style="display: block;" r="10" fill="#111111"></circle><circle cx="385.03130095628984" cy="464.82701767458053" style="display: block;" r="10" fill="#111111"></circle><circle cx="349.6852972618605" cy="481.3091298824678" style="display: block;" r="10" fill="#111111"></circle><circle cx="312.4238586425781" cy="490.8404541015625" style="display: block;" r="10" fill="#111111"></circle><circle cx="275.7897644042969" cy="503.20703125" style="display: block;" r="10" fill="#111111"></circle><circle cx="243.24191284179688" cy="522.9235229492188" style="display: block;" r="10" fill="#111111"></circle><circle cx="206.14022827148438" cy="530.2891235351562" style="display: block;" r="10" fill="#111111"></circle><circle cx="169.11444091796875" cy="535.4341430664062" style="display: block;" r="10" fill="#111111"></circle><circle cx="134.22869873046875" cy="552.2322387695312" style="display: block;" r="10" fill="#111111"></circle><circle cx="96.53697204589844" cy="556.8456420898438" style="display: block;" r="10" fill="#111111"></circle><circle cx="70.11719512939453" cy="530.5533447265625" style="display: block;" r="10" fill="#111111"></circle><circle cx="77.27182006835938" cy="492.6428527832031" style="display: block;" r="10" fill="#111111"></circle><circle cx="67.79728698730469" cy="455.505615234375" style="display: block;" r="10" fill="#111111"></circle><circle cx="57.44046401977539" cy="418.1998291015625" style="display: block;" r="10" fill="#111111"></circle><circle cx="41.00711441040039" cy="383.3563232421875" style="display: block;" r="10" fill="#111111"></circle><circle cx="23.60288429260254" cy="348.78424072265625" style="display: block;" r="10" fill="#111111"></circle><circle cx="17.96015739440918" cy="311.8355407714844" style="display: block;" r="10" fill="#111111"></circle><circle cx="17.931730270385742" cy="273.55963134765625" style="display: block;" r="10" fill="#111111"></circle><circle cx="31.23661994934082" cy="237.07273864746094" style="display: block;" r="10" fill="#111111"></circle><circle cx="58.495201110839844" cy="211.74217224121094" style="display: block;" r="10" fill="#111111"></circle><circle cx="89.41744995117188" cy="191.1853485107422" style="display: block;" r="10" fill="#111111"></circle><circle cx="126.40145874023438" cy="178.84437561035156" style="display: block;" r="10" fill="#111111"></circle><circle cx="163.00192260742188" cy="166.39877319335938" style="display: block;" r="10" fill="#111111"></circle><circle cx="199.13995361328125" cy="152.37864685058594" style="display: block;" r="10" fill="#111111"></circle><circle cx="222.7459716796875" cy="121.45410919189453" style="display: block;" r="10" fill="#111111"></circle><circle cx="248.0743865966797" cy="91.84432220458984" style="display: block;" r="10" fill="#111111"></circle><circle cx="273.0698547363281" cy="62.147010803222656" style="display: block;" r="10" fill="#111111"></circle><circle cx="299.9950866699219" cy="34.30878448486328" style="display: block;" r="10" fill="#111111"></circle><circle cx="335.2001953125" cy="17.656837463378906" style="display: block;" r="10" fill="#111111"></circle><circle cx="367.0562744140625" cy="32.96944046020508" style="display: block;" r="10" fill="#111111"></circle><circle cx="393.1111145019531" cy="55.099334716796875" style="display: block;" r="10" fill="#111111"></circle><circle cx="393.4954528808594" cy="94.09709167480469" style="display: block;" r="10" fill="#111111"></circle><circle cx="393.6038513183594" cy="133.09693908691406" style="display: block;" r="10" fill="#111111"></circle><circle cx="393.6156311035156" cy="172.0968780517578" style="display: block;" r="10" fill="#111111"></circle><circle cx="383.52520751953125" cy="41.4183464050293" style="display: none;" r="10" fill="#111111"></circle><circle cx="392.70458984375" cy="447.4855651855469" style="display: none;" r="10" fill="#111111"></circle><circle cx="237.15475463867188" cy="105.0837173461914" style="display: none;" r="10" fill="#111111"></circle><circle cx="262.4179382324219" cy="75.3834228515625" style="display: none;" r="10" fill="#111111"></circle><circle cx="288.4679870605469" cy="47.017154693603516" style="display: none;" r="10" fill="#111111"></circle><circle cx="319.4703369140625" cy="24.512916564941406" style="display: none;" r="10" fill="#111111"></circle><circle cx="354.95794677734375" cy="20.86924934387207" style="display: none;" r="10" fill="#111111"></circle><circle cx="386.4571228027344" cy="42.52382278442383" style="display: none;" r="10" fill="#111111"></circle></g>
+      </svg>
+    </div>
+  </div>
+
+  <aside class="controls">
+    <h1>WA Particle Loop</h1>
+    <div class="subtitle">
+      Fixed WA vector, particle-based loop animation, entry and exit feeder lines, adjustable pause, and first-pass video export.
+    </div>
+
+    <div class="group">
+      <h2>Particles</h2>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Circle Size</span>
+          <span class="value" id="particleSizeValue">20px</span>
+        </div>
+        <input id="particleSize" type="range" min="2" max="60" step="1" value="20">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Circle Spacing</span>
+          <span class="value" id="particleSpacingValue">39px</span>
+        </div>
+        <input id="particleSpacing" type="range" min="4" max="160" step="1" value="39">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Number of Circles</span>
+          <span class="value" id="particleCountValue">40</span>
+        </div>
+        <input id="particleCount" type="range" min="1" max="80" step="1" value="40">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Lead Colour</span>
+        </div>
+        <input id="particleColour" type="color" value="#111111">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Tail Colour</span>
+        </div>
+        <input id="particleEndColour" type="color" value="#111111">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Lead Opacity</span>
+          <span class="value" id="particleOpacityStartValue">1.00</span>
+        </div>
+        <input id="particleOpacityStart" type="range" min="0" max="1" step="0.01" value="1">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Tail Opacity</span>
+          <span class="value" id="particleOpacityEndValue">1.00</span>
+        </div>
+        <input id="particleOpacityEnd" type="range" min="0" max="1" step="0.01" value="1">
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Movement</h2>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Travel Speed</span>
+          <span class="value" id="speedValue">700px/s</span>
+        </div>
+        <input id="speed" type="range" min="20" max="800" step="5" value="700">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Loops Around WA</span>
+          <span class="value" id="loopsValue">1</span>
+        </div>
+        <input id="loops" type="range" min="1" max="10" step="1" value="1">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Pause Between Cycles</span>
+          <span class="value" id="pauseValue">1.6s</span>
+        </div>
+        <input id="pauseDuration" type="range" min="0" max="10" step="0.1" value="1.6">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Loop Direction</span>
+        </div>
+        <select id="direction">
+          <option value="1">Forward</option>
+          <option value="-1">Reverse</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Entry</h2>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Entry Point</span>
+          <span class="value" id="entryPointValue">58.2%</span>
+        </div>
+        <input id="entryPoint" type="range" min="0" max="100" step="0.1" value="58.2">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Entry Line Length</span>
+          <span class="value" id="entryLengthValue">210px</span>
+        </div>
+        <input id="entryLength" type="range" min="0" max="500" step="1" value="210">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Entry Angle</span>
+          <span class="value" id="entryAngleValue">-25°</span>
+        </div>
+        <input id="entryAngle" type="range" min="-180" max="180" step="1" value="-25">
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Exit</h2>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Exit Point</span>
+          <span class="value" id="exitPointValue">21.0%</span>
+        </div>
+        <input id="exitPoint" type="range" min="0" max="100" step="0.1" value="21">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Exit Line Length</span>
+          <span class="value" id="exitLengthValue">210px</span>
+        </div>
+        <input id="exitLength" type="range" min="0" max="500" step="1" value="210">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Exit Angle</span>
+          <span class="value" id="exitAngleValue">-25°</span>
+        </div>
+        <input id="exitAngle" type="range" min="-180" max="180" step="1" value="-25">
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>View</h2>
+      <label class="check">
+        <input id="showGuides" type="checkbox">
+        <span>Show entry and exit guide lines</span>
+      </label>
+      <label class="check">
+        <input id="showAnchors" type="checkbox">
+        <span>Show entry and exit anchor markers</span>
+      </label>
+      <label class="check">
+        <input id="showOutline" type="checkbox">
+        <span>Show faint WA outline</span>
+      </label>
+    </div>
+
+    <div class="group">
+      <h2>Playback</h2>
+      <div class="button-row">
+        <button id="togglePlayback">Pause</button>
+        <button id="restart">Restart</button>
+      </div>
+      <div class="stats" id="stats">WA path length: <strong>1554.5px</strong><br>Route length per lead particle: <strong>2950.8px</strong><br>Trail length: <strong>1521.0px</strong><br>Movement duration: <strong>6.39s</strong><br>Full cycle incl. pause: <strong>7.99s</strong></div>
+    </div>
+
+    <div class="group">
+      <h2>Export</h2>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Width</span>
+        </div>
+        <input id="exportWidth" type="number" min="320" max="4096" step="10" value="1920">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>Height</span>
+        </div>
+        <input id="exportHeight" type="number" min="240" max="4096" step="10" value="1080">
+      </div>
+
+      <div class="control">
+        <div class="control-header">
+          <span>FPS</span>
+        </div>
+        <input id="exportFps" type="number" min="12" max="60" step="1" value="30">
+      </div>
+
+      <button id="exportVideo" class="primary">Export Video</button>
+      <div class="note">
+        Export preserves the scene aspect ratio inside the requested video size. If your browser supports MP4 it will use that, otherwise it will fall back to WebM.
+      </div>
+      <div class="status" id="exportStatus"></div>
+    </div>
+  </aside>
+
+  <canvas id="exportCanvas" width="1920" height="1080"></canvas>
+
+  <script>
+    const svg = document.getElementById('scene');
+    const backgroundRect = document.getElementById('backgroundRect');
+    const waPath = document.getElementById('waPath');
+    const baseOutline = document.getElementById('baseOutline');
+    const entryGuide = document.getElementById('entryGuide');
+    const exitGuide = document.getElementById('exitGuide');
+    const entryMarker = document.getElementById('entryMarker');
+    const exitMarker = document.getElementById('exitMarker');
+    const particleLayer = document.getElementById('particleLayer');
+
+    // A browser 'Save Page' can persist the currently rendered particle circles
+    // into the HTML. They are only a visual snapshot and must never survive as
+    // unmanaged particles on the next load.
+    particleLayer.replaceChildren();
+
+    const statsEl = document.getElementById('stats');
+    const exportStatus = document.getElementById('exportStatus');
+    const exportCanvas = document.getElementById('exportCanvas');
+
+    const controls = {
+      particleSize: document.getElementById('particleSize'),
+      particleSpacing: document.getElementById('particleSpacing'),
+      particleCount: document.getElementById('particleCount'),
+      particleColour: document.getElementById('particleColour'),
+      particleEndColour: document.getElementById('particleEndColour'),
+      particleOpacityStart: document.getElementById('particleOpacityStart'),
+      particleOpacityEnd: document.getElementById('particleOpacityEnd'),
+      speed: document.getElementById('speed'),
+      loops: document.getElementById('loops'),
+      pauseDuration: document.getElementById('pauseDuration'),
+      direction: document.getElementById('direction'),
+      entryPoint: document.getElementById('entryPoint'),
+      entryLength: document.getElementById('entryLength'),
+      entryAngle: document.getElementById('entryAngle'),
+      exitPoint: document.getElementById('exitPoint'),
+      exitLength: document.getElementById('exitLength'),
+      exitAngle: document.getElementById('exitAngle'),
+      showGuides: document.getElementById('showGuides'),
+      showAnchors: document.getElementById('showAnchors'),
+      showOutline: document.getElementById('showOutline'),
+      exportWidth: document.getElementById('exportWidth'),
+      exportHeight: document.getElementById('exportHeight'),
+      exportFps: document.getElementById('exportFps')
+    };
+
+    const valueOutputs = {
+      particleSize: document.getElementById('particleSizeValue'),
+      particleSpacing: document.getElementById('particleSpacingValue'),
+      particleCount: document.getElementById('particleCountValue'),
+      particleOpacityStart: document.getElementById('particleOpacityStartValue'),
+      particleOpacityEnd: document.getElementById('particleOpacityEndValue'),
+      speed: document.getElementById('speedValue'),
+      loops: document.getElementById('loopsValue'),
+      pauseDuration: document.getElementById('pauseValue'),
+      entryPoint: document.getElementById('entryPointValue'),
+      entryLength: document.getElementById('entryLengthValue'),
+      entryAngle: document.getElementById('entryAngleValue'),
+      exitPoint: document.getElementById('exitPointValue'),
+      exitLength: document.getElementById('exitLengthValue'),
+      exitAngle: document.getElementById('exitAngleValue')
+    };
+
+    const state = {
+      pathLength: waPath.getTotalLength(),
+      particles: [],
+      playing: true,
+      exportInProgress: false,
+      elapsedSeconds: 0,
+      lastTimestamp: null,
+      cycleTimeSeconds: 0,
+      derived: null
+    };
+
+    baseOutline.setAttribute('d', waPath.getAttribute('d'));
+
+    function mod(value, length) {
+      return ((value % length) + length) % length;
+    }
+
+    function polar(angleDeg, length) {
+      const radians = (angleDeg * Math.PI) / 180;
+      return {
+        x: Math.cos(radians) * length,
+        y: Math.sin(radians) * length
+      };
+    }
+
+    function lerp(a, b, t) {
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t
+      };
+    }
+
+    function getNumeric(input) {
+      return Number(input.value);
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace('#', '');
+      const full = clean.length === 3
+        ? clean.split('').map(ch => ch + ch).join('')
+        : clean;
+      const int = parseInt(full, 16);
+      return {
+        r: (int >> 16) & 255,
+        g: (int >> 8) & 255,
+        b: int & 255
+      };
+    }
+
+    function mix(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function getParticleAppearance(index, derived) {
+      const t = derived.particleCount <= 1 ? 0 : index / (derived.particleCount - 1);
+      const start = derived.startRgb;
+      const end = derived.endRgb;
+      return {
+        fill: `rgb(${Math.round(mix(start.r, end.r, t))}, ${Math.round(mix(start.g, end.g, t))}, ${Math.round(mix(start.b, end.b, t))})`,
+        opacity: mix(derived.particleOpacityStart, derived.particleOpacityEnd, t)
+      };
+    }
+
+    function readConfig() {
+      return {
+        particleSize: getNumeric(controls.particleSize),
+        particleSpacing: getNumeric(controls.particleSpacing),
+        particleCount: getNumeric(controls.particleCount),
+        particleColour: controls.particleColour.value,
+        particleEndColour: controls.particleEndColour.value,
+        particleOpacityStart: getNumeric(controls.particleOpacityStart),
+        particleOpacityEnd: getNumeric(controls.particleOpacityEnd),
+        speed: getNumeric(controls.speed),
+        loops: getNumeric(controls.loops),
+        pauseDuration: getNumeric(controls.pauseDuration),
+        direction: Number(controls.direction.value),
+        entryPointPct: getNumeric(controls.entryPoint),
+        entryLength: getNumeric(controls.entryLength),
+        entryAngle: getNumeric(controls.entryAngle),
+        exitPointPct: getNumeric(controls.exitPoint),
+        exitLength: getNumeric(controls.exitLength),
+        exitAngle: getNumeric(controls.exitAngle),
+        showGuides: controls.showGuides.checked,
+        showAnchors: controls.showAnchors.checked,
+        showOutline: controls.showOutline.checked
+      };
+    }
+
+    function ensureParticlePool(count) {
+      while (state.particles.length < count) {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', 0);
+        circle.setAttribute('cy', 0);
+        particleLayer.appendChild(circle);
+        state.particles.push(circle);
+      }
+
+      state.particles.forEach((particle, index) => {
+        particle.style.display = index < count ? 'block' : 'none';
+      });
+    }
+
+    function getPointOnDirectedLoop(distanceFromEntry, derived) {
+      const localDistance = mod(distanceFromEntry, state.pathLength);
+      const nativeDistance = derived.direction === 1
+        ? mod(derived.entryNative + localDistance, state.pathLength)
+        : mod(derived.entryNative - localDistance, state.pathLength);
+
+      const point = waPath.getPointAtLength(nativeDistance);
+      return { x: point.x, y: point.y };
+    }
+
+    function getPointAlongRoute(routeDistance, derived) {
+      if (routeDistance < 0 || routeDistance >= derived.routeLength) {
+        return null;
+      }
+
+      if (derived.entryLength > 0 && routeDistance <= derived.entryLength) {
+        return lerp(
+          derived.entryStart,
+          derived.entryAnchor,
+          routeDistance / derived.entryLength
+        );
+      }
+
+      if (derived.entryLength === 0 && routeDistance === 0) {
+        return derived.entryAnchor;
+      }
+
+      let remaining = routeDistance - derived.entryLength;
+
+      if (remaining <= derived.loopTravelLength) {
+        return getPointOnDirectedLoop(remaining, derived);
+      }
+
+      remaining -= derived.loopTravelLength;
+
+      if (derived.exitLength > 0) {
+        return lerp(
+          derived.exitAnchor,
+          derived.exitEnd,
+          remaining / derived.exitLength
+        );
+      }
+
+      return derived.exitAnchor;
+    }
+
+    function computeDerived(config) {
+      const entryNative = state.pathLength * (config.entryPointPct / 100);
+      const exitNative = state.pathLength * (config.exitPointPct / 100);
+      const entryAnchorPoint = waPath.getPointAtLength(entryNative);
+      const exitAnchorPoint = waPath.getPointAtLength(exitNative);
+      const entryAnchor = { x: entryAnchorPoint.x, y: entryAnchorPoint.y };
+      const exitAnchor = { x: exitAnchorPoint.x, y: exitAnchorPoint.y };
+
+      const entryVector = polar(config.entryAngle, config.entryLength);
+      const exitVector = polar(config.exitAngle, config.exitLength);
+
+      const entryStart = {
+        x: entryAnchor.x + entryVector.x,
+        y: entryAnchor.y + entryVector.y
+      };
+
+      const exitEnd = {
+        x: exitAnchor.x + exitVector.x,
+        y: exitAnchor.y + exitVector.y
+      };
+
+      const exitSegmentLength = config.direction === 1
+        ? mod(exitNative - entryNative, state.pathLength)
+        : mod(entryNative - exitNative, state.pathLength);
+
+      const loopTravelLength = config.loops * state.pathLength + exitSegmentLength;
+      const routeLength = config.entryLength + loopTravelLength + config.exitLength;
+      const tailLength = Math.max(0, (config.particleCount - 1) * config.particleSpacing);
+      const startRgb = hexToRgb(config.particleColour);
+      const endRgb = hexToRgb(config.particleEndColour);
+      const movementDuration = (routeLength + tailLength) / Math.max(config.speed, 1);
+      const cycleDuration = movementDuration + config.pauseDuration;
+
+      return {
+        ...config,
+        entryNative,
+        exitNative,
+        entryAnchor,
+        exitAnchor,
+        entryStart,
+        exitEnd,
+        exitSegmentLength,
+        loopTravelLength,
+        routeLength,
+        tailLength,
+        startRgb,
+        endRgb,
+        movementDuration,
+        cycleDuration
+      };
+    }
+
+    function updateViewBox(derived) {
+      const bbox = waPath.getBBox();
+      const margin = Math.max(derived.particleSize * 3, 80);
+      const xs = [bbox.x, bbox.x + bbox.width, derived.entryStart.x, derived.entryAnchor.x, derived.exitAnchor.x, derived.exitEnd.x];
+      const ys = [bbox.y, bbox.y + bbox.height, derived.entryStart.y, derived.entryAnchor.y, derived.exitAnchor.y, derived.exitEnd.y];
+
+      const minX = Math.min(...xs) - margin;
+      const maxX = Math.max(...xs) + margin;
+      const minY = Math.min(...ys) - margin;
+      const maxY = Math.max(...ys) + margin;
+      const width = maxX - minX;
+      const height = maxY - minY;
+
+      svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+      backgroundRect.setAttribute('x', minX);
+      backgroundRect.setAttribute('y', minY);
+      backgroundRect.setAttribute('width', width);
+      backgroundRect.setAttribute('height', height);
+    }
+
+    function updateStaticVisuals(derived) {
+      ensureParticlePool(derived.particleCount);
+
+      entryGuide.setAttribute('x1', derived.entryStart.x);
+      entryGuide.setAttribute('y1', derived.entryStart.y);
+      entryGuide.setAttribute('x2', derived.entryAnchor.x);
+      entryGuide.setAttribute('y2', derived.entryAnchor.y);
+      entryGuide.setAttribute('stroke', derived.particleColour);
+      entryGuide.setAttribute('stroke-width', derived.particleSize);
+      entryGuide.setAttribute('opacity', derived.showGuides && derived.entryLength > 0 ? 1 : 0);
+
+      exitGuide.setAttribute('x1', derived.exitAnchor.x);
+      exitGuide.setAttribute('y1', derived.exitAnchor.y);
+      exitGuide.setAttribute('x2', derived.exitEnd.x);
+      exitGuide.setAttribute('y2', derived.exitEnd.y);
+      exitGuide.setAttribute('stroke', derived.particleColour);
+      exitGuide.setAttribute('stroke-width', derived.particleSize);
+      exitGuide.setAttribute('opacity', derived.showGuides && derived.exitLength > 0 ? 1 : 0);
+
+      entryMarker.setAttribute('cx', derived.entryAnchor.x);
+      entryMarker.setAttribute('cy', derived.entryAnchor.y);
+      entryMarker.setAttribute('opacity', derived.showAnchors ? 1 : 0);
+
+      exitMarker.setAttribute('cx', derived.exitAnchor.x);
+      exitMarker.setAttribute('cy', derived.exitAnchor.y);
+      exitMarker.setAttribute('opacity', derived.showAnchors ? 1 : 0);
+
+      baseOutline.setAttribute('opacity', derived.showOutline ? 0.7 : 0);
+      baseOutline.setAttribute('stroke-width', Math.max(4, derived.particleSize * 0.36));
+    }
+
+    function formatSeconds(value) {
+      return `${value.toFixed(2)}s`;
+    }
+
+    function updateLabels(derived) {
+      valueOutputs.particleSize.textContent = `${derived.particleSize}px`;
+      valueOutputs.particleSpacing.textContent = `${derived.particleSpacing}px`;
+      valueOutputs.particleCount.textContent = `${derived.particleCount}`;
+      valueOutputs.particleOpacityStart.textContent = `${derived.particleOpacityStart.toFixed(2)}`;
+      valueOutputs.particleOpacityEnd.textContent = `${derived.particleOpacityEnd.toFixed(2)}`;
+      valueOutputs.speed.textContent = `${derived.speed}px/s`;
+      valueOutputs.loops.textContent = `${derived.loops}`;
+      valueOutputs.pauseDuration.textContent = `${derived.pauseDuration.toFixed(1)}s`;
+      valueOutputs.entryPoint.textContent = `${derived.entryPointPct.toFixed(1)}%`;
+      valueOutputs.entryLength.textContent = `${derived.entryLength}px`;
+      valueOutputs.entryAngle.textContent = `${derived.entryAngle}°`;
+      valueOutputs.exitPoint.textContent = `${derived.exitPointPct.toFixed(1)}%`;
+      valueOutputs.exitLength.textContent = `${derived.exitLength}px`;
+      valueOutputs.exitAngle.textContent = `${derived.exitAngle}°`;
+
+      statsEl.innerHTML = [
+        `WA path length: <strong>${state.pathLength.toFixed(1)}px</strong><br>`,
+        `Route length per lead particle: <strong>${derived.routeLength.toFixed(1)}px</strong><br>`,
+        `Trail length: <strong>${derived.tailLength.toFixed(1)}px</strong><br>`,
+        `Movement duration: <strong>${formatSeconds(derived.movementDuration)}</strong><br>`,
+        `Full cycle incl. pause: <strong>${formatSeconds(derived.cycleDuration)}</strong>`
+      ].join('');
+    }
+
+    function refreshConfig({ preserveCyclePosition = true } = {}) {
+      const previousDuration = state.derived ? state.derived.cycleDuration : null;
+      const previousCycleTime = state.cycleTimeSeconds;
+
+      const config = readConfig();
+      const derived = computeDerived(config);
+      state.derived = derived;
+
+      updateLabels(derived);
+      updateStaticVisuals(derived);
+      updateViewBox(derived);
+
+      if (preserveCyclePosition && previousDuration && derived.cycleDuration > 0) {
+        const progress = previousCycleTime / previousDuration;
+        state.cycleTimeSeconds = progress * derived.cycleDuration;
+      } else {
+        state.cycleTimeSeconds = 0;
+      }
+
+      renderCycle(state.cycleTimeSeconds);
+    }
+
+    function renderCycle(cycleTimeSeconds) {
+      if (!state.derived) return;
+
+      const derived = state.derived;
+
+      // The pause phase should be completely empty. Explicitly hide the entire
+      // particle pool instead of leaving the last rendered positions around.
+      if (cycleTimeSeconds >= derived.movementDuration) {
+        state.particles.forEach(particle => {
+          particle.style.display = 'none';
+        });
+        return;
+      }
+
+      const movementTime = cycleTimeSeconds;
+      const leadDistance = Math.min(
+        movementTime * derived.speed,
+        derived.routeLength + derived.tailLength
+      );
+
+      state.particles.forEach((particle, index) => {
+        if (index >= derived.particleCount) {
+          particle.style.display = 'none';
+          return;
+        }
+
+        const routeDistance = leadDistance - index * derived.particleSpacing;
+
+        if (routeDistance < 0 || routeDistance >= derived.routeLength) {
+          particle.style.display = 'none';
+          return;
+        }
+
+        const point = getPointAlongRoute(routeDistance, derived);
+        if (!point) {
+          particle.style.display = 'none';
+          return;
+        }
+
+        const appearance = getParticleAppearance(index, derived);
+        particle.style.display = 'block';
+        particle.setAttribute('cx', point.x);
+        particle.setAttribute('cy', point.y);
+        particle.setAttribute('r', derived.particleSize / 2);
+        particle.setAttribute('fill', appearance.fill);
+        particle.setAttribute('fill-opacity', appearance.opacity);
+      });
+    }
+
+    function tick(timestamp) {
+      if (state.lastTimestamp == null) {
+        state.lastTimestamp = timestamp;
+      }
+
+      const deltaSeconds = (timestamp - state.lastTimestamp) / 1000;
+      state.lastTimestamp = timestamp;
+
+      if (state.playing && !state.exportInProgress && state.derived) {
+        state.cycleTimeSeconds = (state.cycleTimeSeconds + deltaSeconds) % state.derived.cycleDuration;
+        renderCycle(state.cycleTimeSeconds);
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    function restartCycle() {
+      state.cycleTimeSeconds = 0;
+      renderCycle(0);
+    }
+
+    function setPlaybackButtonText() {
+      document.getElementById('togglePlayback').textContent = state.playing ? 'Pause' : 'Play';
+    }
+
+    function serializeSVG() {
+      const clone = svg.cloneNode(true);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+      // Render the SVG at its own viewBox aspect ratio. The export canvas handles
+      // the final output size separately. This avoids applying aspect-ratio
+      // fitting twice, which was making the video artwork appear squashed.
+      const vb = svg.viewBox.baseVal;
+      clone.setAttribute('width', vb.width);
+      clone.setAttribute('height', vb.height);
+      clone.removeAttribute('style');
+
+      // Only serialize particles that are actually visible in this frame.
+      clone.querySelectorAll('#particleLayer circle').forEach(circle => {
+        if (circle.style.display === 'none') circle.remove();
+      });
+
+      return new XMLSerializer().serializeToString(clone);
+    }
+
+    function svgMarkupToImage(markup) {
+      return new Promise((resolve, reject) => {
+        const blob = new Blob([markup], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = error => {
+          URL.revokeObjectURL(url);
+          reject(error);
+        };
+        img.src = url;
+      });
+    }
+
+    function drawImageContained(ctx, img, canvasWidth, canvasHeight) {
+      // One aspect-ratio fit only. The SVG image itself is rendered at the same
+      // proportions as the live preview's viewBox, so circles stay perfectly round.
+      const sourceAspect = img.naturalWidth / img.naturalHeight;
+      const targetAspect = canvasWidth / canvasHeight;
+
+      let drawWidth = canvasWidth;
+      let drawHeight = canvasHeight;
+      let drawX = 0;
+      let drawY = 0;
+
+      if (targetAspect > sourceAspect) {
+        drawHeight = canvasHeight;
+        drawWidth = drawHeight * sourceAspect;
+        drawX = (canvasWidth - drawWidth) / 2;
+      } else {
+        drawWidth = canvasWidth;
+        drawHeight = drawWidth / sourceAspect;
+        drawY = (canvasHeight - drawHeight) / 2;
+      }
+
+      ctx.fillStyle = '#f4f4f4';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function getPreferredMimeType() {
+      const candidates = [
+        { mime: 'video/mp4;codecs=h264', ext: 'mp4' },
+        { mime: 'video/mp4', ext: 'mp4' },
+        { mime: 'video/webm;codecs=vp9', ext: 'webm' },
+        { mime: 'video/webm;codecs=vp8', ext: 'webm' },
+        { mime: 'video/webm', ext: 'webm' }
+      ];
+
+      for (const candidate of candidates) {
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported(candidate.mime)) {
+          return candidate;
+        }
+      }
+
+      return null;
+    }
+
+    async function exportVideo() {
+      if (state.exportInProgress || !state.derived) return;
+      if (!window.MediaRecorder) {
+        exportStatus.textContent = 'This browser does not support MediaRecorder.';
+        return;
+      }
+
+      const preferred = getPreferredMimeType();
+      if (!preferred) {
+        exportStatus.textContent = 'No supported video export codec found in this browser.';
+        return;
+      }
+
+      const width = Math.max(16, Number(controls.exportWidth.value) || 1920);
+      const height = Math.max(16, Number(controls.exportHeight.value) || 1080);
+      const fps = Math.max(1, Number(controls.exportFps.value) || 30);
+      const frameInterval = 1000 / fps;
+      const totalFrames = Math.max(1, Math.ceil(state.derived.cycleDuration * fps));
+      const previousCycleTime = state.cycleTimeSeconds;
+      const previousPlaying = state.playing;
+
+      exportCanvas.width = width;
+      exportCanvas.height = height;
+      const ctx = exportCanvas.getContext('2d');
+      const stream = exportCanvas.captureStream(fps);
+      const recorder = new MediaRecorder(stream, { mimeType: preferred.mime });
+      const chunks = [];
+
+      recorder.ondataavailable = event => {
+        if (event.data && event.data.size > 0) chunks.push(event.data);
+      };
+
+      state.exportInProgress = true;
+      state.playing = false;
+      setPlaybackButtonText();
+      exportStatus.textContent = `Exporting ${totalFrames} frames as ${preferred.ext.toUpperCase()}...`;
+
+      const stopped = new Promise(resolve => {
+        recorder.onstop = resolve;
+      });
+
+      recorder.start();
+
+      try {
+        for (let frame = 0; frame < totalFrames; frame += 1) {
+          const t = Math.min(frame / fps, state.derived.cycleDuration);
+          state.cycleTimeSeconds = t;
+          renderCycle(t);
+
+          const markup = serializeSVG();
+          const img = await svgMarkupToImage(markup);
+
+          ctx.clearRect(0, 0, width, height);
+          drawImageContained(ctx, img, width, height);
+
+          exportStatus.textContent = `Exporting frame ${frame + 1} / ${totalFrames}...`;
+          await wait(frameInterval);
+        }
+      } catch (error) {
+        console.error(error);
+        exportStatus.textContent = 'Export failed while rendering frames.';
+      } finally {
+        recorder.stop();
+      }
+
+      await stopped;
+
+      if (chunks.length > 0) {
+        const blob = new Blob(chunks, { type: preferred.mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `wa-particle-loop.${preferred.ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        exportStatus.textContent = `Export complete. Downloaded ${preferred.ext.toUpperCase()} file.`;
+      } else {
+        exportStatus.textContent = 'Export finished, but no video data was produced.';
+      }
+
+      state.exportInProgress = false;
+      state.playing = previousPlaying;
+      state.cycleTimeSeconds = previousCycleTime;
+      setPlaybackButtonText();
+      renderCycle(previousCycleTime);
+    }
+
+    [
+      controls.particleSize,
+      controls.particleSpacing,
+      controls.particleCount,
+      controls.particleColour,
+      controls.particleEndColour,
+      controls.particleOpacityStart,
+      controls.particleOpacityEnd,
+      controls.speed,
+      controls.loops,
+      controls.pauseDuration,
+      controls.direction,
+      controls.entryPoint,
+      controls.entryLength,
+      controls.entryAngle,
+      controls.exitPoint,
+      controls.exitLength,
+      controls.exitAngle,
+      controls.showGuides,
+      controls.showAnchors,
+      controls.showOutline
+    ].forEach(control => {
+      control.addEventListener('input', () => refreshConfig({ preserveCyclePosition: true }));
+      control.addEventListener('change', () => refreshConfig({ preserveCyclePosition: true }));
+    });
+
+    document.getElementById('togglePlayback').addEventListener('click', () => {
+      state.playing = !state.playing;
+      setPlaybackButtonText();
+    });
+
+    document.getElementById('restart').addEventListener('click', restartCycle);
+    document.getElementById('exportVideo').addEventListener('click', exportVideo);
+
+    refreshConfig({ preserveCyclePosition: false });
+    setPlaybackButtonText();
+    requestAnimationFrame(tick);
+  </script>
+
+
+</body></html>
