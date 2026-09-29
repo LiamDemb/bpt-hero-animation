@@ -1,9 +1,10 @@
 import { polylineToPathD } from './geometry.js';
 
-export function createPreviewRenderer(rootEl) {
+export function createPreviewRenderer(rootEl, { aspectFit = 'meet' } = {}) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('class', 'preview-svg');
-  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  const fit = aspectFit === 'slice' ? 'slice' : 'meet';
+  svg.setAttribute('preserveAspectRatio', `xMidYMid ${fit}`);
 
   const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
   bg.setAttribute('class', 'preview-bg');

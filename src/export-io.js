@@ -21,6 +21,7 @@ export function defaultExportBasename(stem, format) {
   const safe = String(stem || 'untitled')
     .replace(/[/\\?%*:|"<>]/g, '-')
     .trim() || 'untitled';
+  if (format === 'embed') return `${safe}.embed.html`;
   const ext = format === 'mp4' ? 'mp4' : 'webm';
   return `${safe}.${ext}`;
 }
@@ -28,6 +29,14 @@ export function defaultExportBasename(stem, format) {
 export function sanitizeExportFilename(name, format) {
   let base = String(name ?? '').trim().replace(/^.*[/\\]/, '');
   if (!base) return null;
+  if (format === 'embed') {
+    if (!base.toLowerCase().endsWith('.embed.html')) {
+      base = base.replace(/\.(embed\.html|html|mp4|webm)$/i, '');
+      base = `${base}.embed.html`;
+    }
+    if (base.includes('..')) return null;
+    return base;
+  }
   const ext = format === 'mp4' ? '.mp4' : '.webm';
   if (!base.toLowerCase().endsWith(ext)) {
     base = base.replace(/\.(mp4|webm)$/i, '');
@@ -35,6 +44,23 @@ export function sanitizeExportFilename(name, format) {
   }
   if (base.includes('..')) return null;
   return base;
+}
+
+export async function writeEmbedHtml({ html, filename }) {
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  if (await isExportsApiAvailable()) {
+    const res = await fetch('/api/exports', {
+      method: 'POST',
+      headers: { 'X-Filename': filename },
+      body: blob
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return { ok: true, via: 'exports', path: data.path || `exports/${filename}`, bytes: html.length };
+    }
+  }
+  downloadBlob(blob, filename);
+  return { ok: true, via: 'download', path: filename, bytes: html.length };
 }
 
 function downloadBlob(blob, filename) {

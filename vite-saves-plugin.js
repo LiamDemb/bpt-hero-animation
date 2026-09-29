@@ -37,6 +37,7 @@ function safeExportFilename(name) {
   const base = path.basename(name || '');
   if (!base || base.includes('..')) return null;
   const lower = base.toLowerCase();
+  if (lower.endsWith('.embed.html')) return base;
   if (!lower.endsWith('.mp4') && !lower.endsWith('.webm')) return null;
   return base;
 }

@@ -2,13 +2,16 @@ import '@fontsource/instrument-sans/400.css';
 import '@fontsource/instrument-sans/500.css';
 import './styles.css';
 
+import { createAnimationPlayer } from './animation-player.js';
 import { canExportFormat, exportAnimation } from './export-video.js';
+import { buildEmbedDocument } from './export-embed.js';
 import {
   chooseExportFolder,
   defaultExportBasename,
   getExportFolderLabel,
   isExportsApiAvailable,
   sanitizeExportFilename,
+  writeEmbedHtml,
   writeExport
 } from './export-io.js';
 import {
@@ -40,7 +43,6 @@ import {
   syncSpeedLinkUi,
   writeSettingsToPanel
 } from './panel.js';
-import { createPreviewRenderer } from './render.js';
 import { computeFitSceneScale, createSampler } from './simulation.js';
 import { createDefaultSettings, mergeSettings } from './settings.js';
 
@@ -48,16 +50,15 @@ const app = document.getElementById('app');
 app.innerHTML = '<div class="stage" id="stage"></div>';
 
 const stageEl = document.getElementById('stage');
-const preview = createPreviewRenderer(stageEl);
 
 let settings = createDefaultSettings();
 settings.sceneScale = computeFitSceneScale(settings);
 
-let sampler = createSampler(settings);
+const player = createAnimationPlayer(stageEl, settings);
+player.setAdvancePredicate(() => playing && !exportBusy);
+
 let playing = true;
 let scrubbing = false;
-let cycleTime = 0;
-let lastTs = null;
 let exportCancel = false;
 let exportBusy = false;
 let useCustomExportFolder = false;
@@ -73,12 +74,12 @@ const panelApi = mountPanel(app, {
     panelApi.playBtn.textContent = playing ? 'Pause' : 'Play';
   },
   onRestart: () => {
-    cycleTime = 0;
+    player.cycleTime = 0;
     updateFrame();
   },
   onScrub: frac => {
     scrubbing = true;
-    cycleTime = frac * sampler.duration;
+    player.cycleTime = frac * player.sampler.duration;
     updateFrame();
     scrubbing = false;
   },
@@ -128,6 +129,8 @@ const panelApi = mountPanel(app, {
     }
     await runExport(format);
   },
+  onExportEmbed: () => runEmbedExport('file'),
+  onCopyEmbed: () => runEmbedExport('clipboard'),
   onSpeedLinkToggle: () => {
     settings = readSettingsFromPanel(panelApi.bindings, settings);
     settings.speedsLinked = !settings.speedsLinked;
@@ -193,17 +196,9 @@ async function performSave(mode) {
 }
 
 function refresh({ preserveTime = true } = {}) {
-  const prevDuration = sampler.duration;
   settings = readSettingsFromPanel(panelApi.bindings, settings);
   settings = mergeSettings(settings);
-  sampler = createSampler(settings);
-
-  if (preserveTime && prevDuration > 0) {
-    const progress = cycleTime / prevDuration;
-    cycleTime = progress * sampler.duration;
-  } else {
-    cycleTime = 0;
-  }
+  player.rebuild(settings, { preserveTime });
 
   writeSettingsToPanel(panelApi.bindings, settings, formattersForSettings(settings));
   syncSpeedLinkUi(panelApi, settings);
@@ -212,23 +207,17 @@ function refresh({ preserveTime = true } = {}) {
 }
 
 function updateFrame() {
-  const t = Math.max(0, Math.min(cycleTime, sampler.duration));
-  const sampleResult = sampler.sample(t);
-  preview.renderFrame(settings, sampleResult);
-  panelApi.scrubber.value = String(Math.round((t / sampler.duration) * 1000) || 0);
+  const { t, sampleResult, duration } = player.render();
+  panelApi.scrubber.value = String(Math.round((t / duration) * 1000) || 0);
   panelApi.statsEl.innerHTML = [
-    `Time <strong>${t.toFixed(2)}s</strong> / ${sampler.duration.toFixed(2)}s`,
+    `Time <strong>${t.toFixed(2)}s</strong> / ${duration.toFixed(2)}s`,
     ` · ${sampleResult.phase}`
   ].join('');
 }
 
 function tick(ts) {
-  if (lastTs == null) lastTs = ts;
-  const dt = (ts - lastTs) / 1000;
-  lastTs = ts;
-
-  if (playing && !exportBusy && sampler.duration > 0) {
-    cycleTime = (cycleTime + dt) % sampler.duration;
+  player.frame(ts);
+  if (!exportBusy) {
     updateFrame();
   }
   requestAnimationFrame(tick);
@@ -265,7 +254,8 @@ async function runExport(format) {
     return;
   }
   settings = readSettingsFromPanel(panelApi.bindings, settings);
-  sampler = createSampler(settings);
+  settings = mergeSettings(settings);
+  const sampler = createSampler(settings);
   exportBusy = true;
   exportCancel = false;
   playing = false;
@@ -315,6 +305,35 @@ async function runExport(format) {
     panelApi.exportMp4Btn.textContent = 'Export MP4';
     panelApi.exportWebmBtn.textContent = 'Export WebM';
     updateFrame();
+  }
+}
+
+async function runEmbedExport(destination) {
+  panelApi.exportStatusEl.textContent = 'Building embed…';
+  settings = readSettingsFromPanel(panelApi.bindings, settings);
+  settings = mergeSettings(settings);
+
+  const stemInput = panelApi.exportFilenameInput.value.trim() || exportStem();
+  const filename =
+    sanitizeExportFilename(stemInput, 'embed') ||
+    defaultExportBasename(exportStem(), 'embed');
+
+  try {
+    const html = await buildEmbedDocument(settings);
+    if (destination === 'clipboard') {
+      await navigator.clipboard.writeText(html);
+      const kb = (html.length / 1024).toFixed(1);
+      panelApi.exportStatusEl.textContent = `Copied embed to clipboard (${kb} KB).`;
+      return;
+    }
+    const writeResult = await writeEmbedHtml({ html, filename });
+    if (writeResult.ok) {
+      const kb = ((writeResult.bytes ?? html.length) / 1024).toFixed(1);
+      panelApi.exportStatusEl.textContent = `Exported to ${writeResult.path} (${kb} KB)`;
+    }
+  } catch (error) {
+    console.error(error);
+    panelApi.exportStatusEl.textContent = error.message || 'Embed export failed.';
   }
 }
 

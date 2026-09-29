@@ -101,6 +101,8 @@ export function mountPanel(container, {
   onRename,
   onNewProject,
   onExport,
+  onExportEmbed,
+  onCopyEmbed,
   onChooseExportFolder,
   onSpeedLinkToggle
 }) {
@@ -312,7 +314,11 @@ export function mountPanel(container, {
   exportMp4.id = 'exportMp4';
   const exportWebm = el('button', 'primary', 'Export WebM');
   exportWebm.id = 'exportWebm';
-  exportSec.append(exportMp4, exportWebm);
+  const exportEmbed = el('button', 'primary', 'Export embed');
+  exportEmbed.id = 'exportEmbed';
+  const copyEmbed = el('button', '', 'Copy embed');
+  copyEmbed.id = 'copyEmbed';
+  exportSec.append(exportMp4, exportWebm, exportEmbed, copyEmbed);
   const exportStatus = el('div', 'status');
   exportStatus.id = 'exportStatus';
   exportSec.append(exportStatus);
@@ -336,6 +342,8 @@ export function mountPanel(container, {
   chooseExportFolderBtn.addEventListener('click', onChooseExportFolder);
   exportMp4.addEventListener('click', () => onExport('mp4'));
   exportWebm.addEventListener('click', () => onExport('webm'));
+  exportEmbed.addEventListener('click', () => onExportEmbed?.());
+  copyEmbed.addEventListener('click', () => onCopyEmbed?.());
 
   return {
     bindings,
