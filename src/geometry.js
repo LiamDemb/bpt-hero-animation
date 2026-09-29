@@ -32,15 +32,19 @@ export function sampleCircle(radius, count) {
   return { points, length };
 }
 
-export function centroid(points) {
-  let x = 0;
-  let y = 0;
+export function boundingBoxCenter(points) {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
   for (const p of points) {
-    x += p.x;
-    y += p.y;
+    minX = Math.min(minX, p.x);
+    maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y);
+    maxY = Math.max(maxY, p.y);
   }
-  const n = points.length || 1;
-  return { x: x / n, y: y / n };
+  if (!points.length) return { x: 0, y: 0 };
+  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
 }
 
 export function translatePoints(points, dx, dy) {
@@ -161,7 +165,7 @@ export function mix(a, b, t) {
 export function buildShapeContext(settings, waPathD) {
   const SAMPLE_COUNT = 256;
   const mapSample = sampleSvgPath(waPathD, SAMPLE_COUNT);
-  const mapC = centroid(mapSample.points);
+  const mapC = boundingBoxCenter(mapSample.points);
   let mapPts = translatePoints(mapSample.points, -mapC.x, -mapC.y);
   mapPts = scalePoints(mapPts, settings.mapScale, settings.mapScale, { x: 0, y: 0 });
   const mapResampled = resampleClosedPolyline(mapPts, SAMPLE_COUNT);
