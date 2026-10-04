@@ -13,26 +13,9 @@ Before exporting embeds (or after changing simulation code), build the embed run
 npm run build:embed
 ```
 
-In the editor, use **Export embed** to write `exports/{name}.embed.html`, or **Copy embed** for a self-contained HTML snippet.
+In the editor, use **Export embed** or **Copy embed**. The result is a self-contained snippet: a div, scoped styles, and the animation script. Paste it into an HTML block on the page. It does not include a document, `html`, or `body` rules, so it will not lock the rest of the page’s scroll.
 
-### Hosting on your site (iframe)
-
-Size the iframe to match your layout. The embed fills the iframe and scales like **object-fit: cover** (same frame aspect as **Width** / **Height** in the editor). For a pixel-perfect match to the project frame, use the same aspect ratio (e.g. `3200 / 1080`).
-
-```html
-<iframe
-  src="/media/wa-hero.embed.html"
-  title="Beacon hero animation"
-  width="100%"
-  height="600"
-  style="border:0;display:block;aspect-ratio:3200/1080"
-  loading="lazy"
-></iframe>
-```
-
-The exported HTML exposes `data-frame-width` and `data-frame-height` on `#bpt-hero` for CMS wiring.
-
-Serve the file with `Content-Type: text/html`. Enable gzip or Brotli on your CDN for smaller transfers.
+Give the parent a size (hero section, iframe, or embed widget). The snippet fills that slot (`width`/`height` 100%). If the parent has width but no height, height comes from the project frame aspect ratio. The animation covers the box like `object-fit: cover`. `data-frame-width` and `data-frame-height` match Width and Height in the editor.
 
 ## Video export
 

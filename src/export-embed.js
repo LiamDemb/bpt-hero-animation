@@ -50,24 +50,12 @@ export async function buildEmbedDocument(settings) {
   const frameHeight = merged.frameHeight;
   const backgroundColor = escapeHtmlAttr(merged.backgroundColor);
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Beacon WA Hero</title>
+  const safeSettings = escapeScriptClose(settingsJson);
+
+  return `<div class="bpt-hero-embed" data-frame-width="${frameWidth}" data-frame-height="${frameHeight}" style="aspect-ratio:${frameWidth} / ${frameHeight};background:${backgroundColor}">
   <style>${embedCss}</style>
-</head>
-<body style="background:${backgroundColor}">
-  <div
-    id="bpt-hero"
-    data-frame-width="${frameWidth}"
-    data-frame-height="${frameHeight}"
-    style="aspect-ratio:${frameWidth} / ${frameHeight};background:${backgroundColor}"
-  ></div>
-  <script>window.__BPT_HERO__ = ${settingsJson};</script>
-  <script>${safeRuntime}</script>
-</body>
-</html>
+  <script type="application/json" class="bpt-hero-settings">${safeSettings}</script>
+</div>
+<script>${safeRuntime}</script>
 `;
 }
