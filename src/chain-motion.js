@@ -1,10 +1,61 @@
+import { isAustraliaStoryboard, mix } from './geometry.js';
+
 function smoothstep(u) {
   const t = Math.max(0, Math.min(1, u));
   return t * t * (3 - 2 * t);
 }
 
+function morphPhaseSpeed(t, timeline, settings, phaseSpeeds) {
+  const australia = isAustraliaStoryboard(settings);
+
+  if (!australia) {
+    const { morphStart, morphEnd, morphDuration, gateTime } = timeline;
+    if (t >= gateTime) {
+      return phaseSpeeds.map;
+    }
+    if (t >= morphEnd) {
+      return phaseSpeeds.map;
+    }
+    if (t >= morphStart && morphDuration > 0) {
+      const u = (t - morphStart) / morphDuration;
+      return mix(phaseSpeeds.circle, phaseSpeeds.map, u);
+    }
+    return phaseSpeeds.circle;
+  }
+
+  const {
+    ausMorphStart,
+    ausMorphEnd,
+    ausMorphDuration,
+    ausHoldEnd,
+    waMorphEnd,
+    waMorphDuration,
+    gateTime
+  } = timeline;
+
+  if (t >= gateTime) {
+    return phaseSpeeds.map;
+  }
+  if (t >= waMorphEnd) {
+    return phaseSpeeds.map;
+  }
+  if (t >= ausHoldEnd && waMorphDuration > 0) {
+    const u = (t - ausHoldEnd) / waMorphDuration;
+    return mix(phaseSpeeds.aus, phaseSpeeds.map, u);
+  }
+  if (t >= ausMorphEnd) {
+    return phaseSpeeds.aus;
+  }
+  if (t >= ausMorphStart && ausMorphDuration > 0) {
+    const u = (t - ausMorphStart) / ausMorphDuration;
+    return mix(phaseSpeeds.circle, phaseSpeeds.aus, u);
+  }
+  return phaseSpeeds.circle;
+}
+
 function rawTargetSpeed(t, leadRoute, ctx) {
-  const { entryLength, exitRouteStart, exitLength, tailLength, phaseSpeeds, timeline } = ctx;
+  const { entryLength, exitRouteStart, exitLength, tailLength, phaseSpeeds, timeline, settings } =
+    ctx;
   const routeEnd = exitRouteStart + exitLength;
   const tailRoute = leadRoute - tailLength;
 
@@ -19,14 +70,7 @@ function rawTargetSpeed(t, leadRoute, ctx) {
     return phaseSpeeds.entry;
   }
 
-  const { morphEnd, gateTime } = timeline;
-  if (t >= gateTime) {
-    return phaseSpeeds.map;
-  }
-  if (t >= morphEnd) {
-    return phaseSpeeds.map;
-  }
-  return phaseSpeeds.circle;
+  return morphPhaseSpeed(t, timeline, settings, phaseSpeeds);
 }
 
 function integrateMotion(ctx, stopAtLead = Infinity) {

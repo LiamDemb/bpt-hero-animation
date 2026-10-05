@@ -1,47 +1,71 @@
 import { evaluateEasing } from './easing.js';
 import { createChainMotionModel, leadRouteAtWallTime } from './chain-motion.js';
 import { resolvePhaseSpeeds } from './phase-speeds.js';
+import { AUS_PATH_D } from './aus-path.js';
 import { WA_PATH_D } from './wa-path.js';
 import {
   buildShapeContext,
   hexToRgb,
+  isAustraliaStoryboard,
   lerpPoint,
   mix,
   outlineAtTime,
+  outlineRouteDistance,
   pointAtPolylineDistance,
   polar,
   polylineLength
 } from './geometry.js';
 
-function morphProgressAt(renderTime, timeline) {
-  const { morphStart, morphDuration, settings } = timeline;
-  if (renderTime < morphStart) return 0;
-  const raw = (renderTime - morphStart) / Math.max(morphDuration, 0.001);
-  return evaluateEasing(settings.morphEasing, raw);
-}
-
-function getOutlineForRenderTime(renderTime, timeline) {
-  const morphT = morphProgressAt(renderTime, timeline);
-  const outline = outlineAtTime(timeline.shapeCtx, morphT);
+function getOutlineForRenderTime(renderTime, timeline, settings) {
+  const outline = outlineAtTime(timeline.shapeCtx, renderTime, timeline, settings);
   return { outline, length: polylineLength(outline) };
 }
 
 function buildTimeline(settings, shapeCtx, circleEntryTime) {
-  const morphStart = circleEntryTime + settings.onCircle;
-  const morphEnd = morphStart + settings.morphDuration;
-  const gateTime = morphEnd + settings.onMap;
+  const easingId = settings.morphEasing;
+  const morphEased = raw => evaluateEasing(easingId, raw);
+  const australia = isAustraliaStoryboard(settings);
+
+  if (!australia) {
+    const morphStart = circleEntryTime + settings.onCircle;
+    const morphEnd = morphStart + settings.morphDuration;
+    const gateTime = morphEnd + settings.onMap;
+    return {
+      settings,
+      shapeCtx,
+      morphStart,
+      morphEnd,
+      morphDuration: settings.morphDuration,
+      gateTime,
+      morphEased
+    };
+  }
+
+  const ausMorphStart = circleEntryTime + settings.onCircle;
+  const ausMorphEnd = ausMorphStart + settings.ausMorphDuration;
+  const ausHoldEnd = ausMorphEnd + settings.onAus;
+  const waMorphEnd = ausHoldEnd + settings.ausToWaDuration;
+  const gateTime = waMorphEnd + settings.onMap;
+
   return {
     settings,
     shapeCtx,
-    morphStart,
-    morphEnd,
+    morphStart: ausMorphStart,
+    morphEnd: waMorphEnd,
     morphDuration: settings.morphDuration,
-    gateTime
+    ausMorphStart,
+    ausMorphEnd,
+    ausMorphDuration: settings.ausMorphDuration,
+    ausHoldEnd,
+    waMorphEnd,
+    waMorphDuration: settings.ausToWaDuration,
+    gateTime,
+    morphEased
   };
 }
 
 function leaderStateFromRouteDist(routeDist, renderTime, derived, timeline) {
-  const { entryLength, exitLength, entryFrac, exitFrac, exitRouteStart } = derived;
+  const { entryLength, exitLength, entryFrac, exitFrac, exitRouteStart, settings } = derived;
   const dist = routeDist;
 
   if (dist <= 0) {
@@ -59,7 +83,7 @@ function leaderStateFromRouteDist(routeDist, renderTime, derived, timeline) {
   }
 
   const outlineTravel = dist - entryLength;
-  const { outline, length } = getOutlineForRenderTime(renderTime, timeline);
+  const { outline, length } = getOutlineForRenderTime(renderTime, timeline, settings);
   const entryPointDist = entryFrac * length;
   const exitPointDist = exitFrac * length;
   const travelToExit = derived.outlineExitThreshold;
@@ -103,7 +127,7 @@ function leaderStateFromRouteDist(routeDist, renderTime, derived, timeline) {
 }
 
 function pointFromLeaderState(state, derived, timeline, renderTime) {
-  const { entryStart, entryAnchor, exitAnchor, exitEnd } = derived;
+  const { entryStart, entryAnchor, exitAnchor, exitEnd, settings } = derived;
 
   if (state.segment === 'entry') {
     return lerpPoint(entryStart, entryAnchor, state.entryT);
@@ -117,12 +141,16 @@ function pointFromLeaderState(state, derived, timeline, renderTime) {
     return exitEnd;
   }
 
-  const { outline } = getOutlineForRenderTime(renderTime, timeline);
+  const { outline } = getOutlineForRenderTime(renderTime, timeline, settings);
   const len = polylineLength(outline);
-  const entryDist = derived.entryFrac * len;
   const arc = state.outlineArc;
-  const dir = derived.settings.direction;
-  const d = dir === 1 ? entryDist + arc : entryDist - arc;
+  const d = outlineRouteDistance(
+    derived.entryFrac,
+    arc,
+    len,
+    derived.outlineRefLength,
+    settings.direction
+  );
   return pointAtPolylineDistance(outline, d);
 }
 
@@ -138,15 +166,19 @@ function forwardArcBetween(entryDist, exitDist, length, direction) {
 }
 
 function outlineExitThresholdAtGate(leadRouteAtGate, entryLength, gateTime, derived, timeline) {
-  const { settings, entryFrac, exitFrac } = derived;
+  const { settings, entryFrac, exitFrac, outlineRefLength } = derived;
+  const refLength = outlineRefLength > 0 ? outlineRefLength : timeline.shapeCtx.circleLength;
   const outlineTravelAtGate = Math.max(0, leadRouteAtGate - entryLength);
-  const morphT = morphProgressAt(gateTime, timeline);
-  const outline = outlineAtTime(timeline.shapeCtx, morphT);
+  const outline = outlineAtTime(timeline.shapeCtx, gateTime, timeline, settings);
   const length = polylineLength(outline);
-  const entryDist = entryFrac * length;
   const exitDist = exitFrac * length;
-  const posAtGate =
-    settings.direction === 1 ? entryDist + outlineTravelAtGate : entryDist - outlineTravelAtGate;
+  const posAtGate = outlineRouteDistance(
+    entryFrac,
+    outlineTravelAtGate,
+    length,
+    refLength,
+    settings.direction
+  );
   const normalized = ((posAtGate % length) + length) % length;
   const remaining = forwardArcBetween(normalized, exitDist, length, settings.direction);
   return outlineTravelAtGate + remaining;
@@ -168,9 +200,20 @@ function phaseName(time, derived, timeline) {
   const lead = derived.motion.leadRouteAt(time);
   const tailRoute = lead - derived.tailLength;
   if (tailRoute < settings.entryLength) return 'Entry';
-  if (time < timeline.morphStart) return 'Circle';
-  if (time < timeline.morphEnd) return 'Morph';
-  if (time < timeline.gateTime) return 'Map';
+
+  const australia = isAustraliaStoryboard(settings);
+  if (!australia) {
+    if (time < timeline.morphStart) return 'Circle';
+    if (time < timeline.morphEnd) return 'Morph';
+    if (time < timeline.gateTime) return 'Map';
+  } else {
+    if (time < timeline.ausMorphStart) return 'Circle';
+    if (time < timeline.ausMorphEnd) return 'Morph';
+    if (time < timeline.ausHoldEnd) return 'Australia';
+    if (time < timeline.waMorphEnd) return 'Morph';
+    if (time < timeline.gateTime) return 'Map';
+  }
+
   const state = leaderStateFromRouteDist(lead, time, derived, timeline);
   if (state.segment === 'exit' || state.segment === 'done') return 'Exit';
   return 'To exit';
@@ -188,6 +231,7 @@ export function computeFitSceneScale(settings) {
     const pts = [
       ...guides.circleOutline,
       ...guides.mapOutline,
+      ...(guides.ausOutline ?? []),
       guides.entryStart,
       guides.entryAnchor,
       guides.exitAnchor,
@@ -208,19 +252,22 @@ export function computeFitSceneScale(settings) {
 }
 
 export function createSampler(settings) {
-  const shapeCtx = buildShapeContext(settings, WA_PATH_D);
+  const shapeCtx = buildShapeContext(settings, WA_PATH_D, AUS_PATH_D);
   const phaseSpeeds = resolvePhaseSpeeds(settings);
   const entryLength = settings.entryLength;
   const exitLength = settings.exitLength;
   const tailLength = Math.max(0, (settings.particleCount - 1) * settings.particleSpacing);
 
-  const entryOutline = outlineAtTime(shapeCtx, 0);
+  const entryOutline = shapeCtx.circlePoints;
   const entryLen0 = polylineLength(entryOutline);
   const entryFrac = settings.entryPointPct / 100;
   const exitFrac = settings.exitPointPct / 100;
   const entryAnchor = pointAtPolylineDistance(entryOutline, entryFrac * entryLen0);
 
-  const mapOutline = outlineAtTime(shapeCtx, 1);
+  const circleEntryTime = entryLength / phaseSpeeds.entry;
+  const timeline = buildTimeline(settings, shapeCtx, circleEntryTime);
+
+  const mapOutline = outlineAtTime(shapeCtx, timeline.gateTime, timeline, settings);
   const mapLen = polylineLength(mapOutline);
   const exitAnchor = pointAtPolylineDistance(mapOutline, exitFrac * mapLen);
 
@@ -234,9 +281,6 @@ export function createSampler(settings) {
     x: exitAnchor.x + exitVector.x,
     y: exitAnchor.y + exitVector.y
   };
-
-  const circleEntryTime = entryLength / phaseSpeeds.entry;
-  const timeline = buildTimeline(settings, shapeCtx, circleEntryTime);
 
   let exitRouteStart = entryLength + 2000;
   let outlineExitThreshold = 0;
@@ -260,7 +304,7 @@ export function createSampler(settings) {
       leadAtGate,
       entryLength,
       timeline.gateTime,
-      { settings, entryFrac, exitFrac },
+      { settings, entryFrac, exitFrac, outlineRefLength: shapeCtx.circleLength },
       timeline
     );
     const nextStart = entryLength + outlineExitThreshold;
@@ -308,16 +352,19 @@ export function createSampler(settings) {
     duration,
     timeline,
     motion,
+    outlineRefLength: shapeCtx.circleLength,
     startRgb: hexToRgb(settings.particleColour),
     endRgb: hexToRgb(settings.particleEndColour)
   };
+
+  const australia = isAustraliaStoryboard(settings);
 
   function sample(t) {
     const time = Math.max(0, t);
     const dots = [];
     const count = settings.particleCount;
 
-    if (time >= movementDuration) {
+    if (movementDuration > 0 && time >= movementDuration) {
       for (let i = 0; i < count; i += 1) {
         dots.push({ x: 0, y: 0, visible: false, fill: '#000', opacity: 0 });
       }
@@ -342,8 +389,9 @@ export function createSampler(settings) {
       }
     }
 
-    const circleOutline = outlineAtTime(shapeCtx, 0);
-    const mapOutlineFull = outlineAtTime(shapeCtx, 1);
+    const circleOutline = outlineAtTime(shapeCtx, 0, timeline, settings);
+    const mapOutlineFull = outlineAtTime(shapeCtx, timeline.gateTime, timeline, settings);
+    const ausOutlineFull = australia ? shapeCtx.ausPoints : null;
 
     return {
       dots,
@@ -354,7 +402,8 @@ export function createSampler(settings) {
         exitAnchor,
         exitEnd,
         circleOutline,
-        mapOutline: mapOutlineFull
+        mapOutline: mapOutlineFull,
+        ausOutline: ausOutlineFull
       },
       movementDuration,
       duration

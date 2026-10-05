@@ -68,7 +68,32 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 12px;
+}
+
+.storyboard-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
   margin-bottom: 20px;
+}
+
+.storyboard-btn {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: #fafafa;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.storyboard-btn.is-selected {
+  background: #111;
+  color: #fff;
+  border-color: #111;
 }
 
 .logo {

@@ -41,6 +41,7 @@ import {
   readSettingsFromPanel,
   syncProjectUi,
   syncSpeedLinkUi,
+  syncStoryboardUi,
   writeSettingsToPanel
 } from './panel.js';
 import { computeFitSceneScale, createSampler } from './simulation.js';
@@ -111,6 +112,7 @@ const panelApi = mountPanel(app, {
     resetSession();
     writeSettingsToPanel(panelApi.bindings, settings, formattersForSettings(settings));
     syncSpeedLinkUi(panelApi, settings);
+    syncStoryboardUi(panelApi, settings);
     syncExportFilenameDefault();
     refresh({ preserveTime: false });
     updateProjectUi();
@@ -139,11 +141,13 @@ const panelApi = mountPanel(app, {
       settings.entrySpeed = master;
       settings.circleSpeed = master;
       settings.mapSpeed = master;
+      settings.ausSpeed = master;
       settings.exitSpeed = master;
     }
     settings = mergeSettings(settings);
     writeSettingsToPanel(panelApi.bindings, settings, formattersForSettings(settings));
     syncSpeedLinkUi(panelApi, settings);
+    syncStoryboardUi(panelApi, settings);
     markDirty();
     updateProjectUi();
     refresh({ preserveTime: true });
@@ -152,6 +156,7 @@ const panelApi = mountPanel(app, {
 
 writeSettingsToPanel(panelApi.bindings, settings, formattersForSettings(settings));
 syncSpeedLinkUi(panelApi, settings);
+syncStoryboardUi(panelApi, settings);
 panelApi.playBtn.textContent = 'Pause';
 syncExportFilenameDefault();
 updateProjectUi();
@@ -202,6 +207,7 @@ function refresh({ preserveTime = true } = {}) {
 
   writeSettingsToPanel(panelApi.bindings, settings, formattersForSettings(settings));
   syncSpeedLinkUi(panelApi, settings);
+  syncStoryboardUi(panelApi, settings);
   panelApi.scrubber.max = '1000';
   updateFrame();
 }
@@ -238,6 +244,7 @@ async function loadProjectFromPick(picked) {
   clearDirty();
   writeSettingsToPanel(panelApi.bindings, settings, formattersForSettings(settings));
   syncSpeedLinkUi(panelApi, settings);
+  syncStoryboardUi(panelApi, settings);
   syncExportFilenameDefault();
   refresh({ preserveTime: false });
   panelApi.projectStatusEl.textContent = `Opened · ${getSaveFilename() ?? picked.filename ?? 'project'}`;

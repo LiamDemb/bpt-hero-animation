@@ -15,6 +15,7 @@ export function resolvePhaseSpeeds(settings) {
       entry: master,
       circle: master,
       morph: master,
+      aus: master,
       map: master,
       exit: master,
       postGate: master,
@@ -23,12 +24,14 @@ export function resolvePhaseSpeeds(settings) {
   }
   const entry = clampSpeed(settings.entrySpeed, master);
   const circle = clampSpeed(settings.circleSpeed, master);
+  const aus = clampSpeed(settings.ausSpeed, master);
   const map = clampSpeed(settings.mapSpeed, master);
   const exit = clampSpeed(settings.exitSpeed, master);
   return {
     entry,
     circle,
     morph: circle,
+    aus,
     map,
     exit,
     postGate: map,

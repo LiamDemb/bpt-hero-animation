@@ -13,23 +13,30 @@ export const SETTINGS_SCHEMA = {
     frameHeight: { min: 240, max: 4096, step: 10 },
     particleSize: { min: 2, max: 60, step: 1 },
     particleSpacing: { min: 4, max: 160, step: 1 },
-    particleCount: { min: 1, max: 80, step: 1 },
+    particleCount: { min: 1, max: 200, step: 1 },
     particleOpacityStart: { min: 0, max: 1, step: 0.01 },
     particleOpacityEnd: { min: 0, max: 1, step: 0.01 },
     speed: { min: SPEED_MIN, max: SPEED_MAX, step: 5 },
     entrySpeed: { min: SPEED_MIN, max: SPEED_MAX, step: 5 },
     circleSpeed: { min: SPEED_MIN, max: SPEED_MAX, step: 5 },
     mapSpeed: { min: SPEED_MIN, max: SPEED_MAX, step: 5 },
+    ausSpeed: { min: SPEED_MIN, max: SPEED_MAX, step: 5 },
     exitSpeed: { min: SPEED_MIN, max: SPEED_MAX, step: 5 },
     onCircle: { min: 0, max: 10, step: 0.1 },
     morphDuration: { min: 0.1, max: 10, step: 0.1 },
     onMap: { min: 0, max: 10, step: 0.1 },
+    ausMorphDuration: { min: 0.1, max: 10, step: 0.1 },
+    onAus: { min: 0, max: 10, step: 0.1 },
+    ausToWaDuration: { min: 0.1, max: 10, step: 0.1 },
     pauseDuration: { min: 0, max: 10, step: 0.1 },
     speedBlend: { min: 0, max: 3, step: 0.05 },
     sceneScale: { min: 0.1, max: 3, step: 0.01 },
     circleRadius: { min: 50, max: 800, step: 1 },
     mapScale: { min: 0.2, max: 3, step: 0.01 },
+    ausScale: { min: 0.2, max: 3, step: 0.01 },
     morphAlignment: { min: 0, max: 100, step: 0.1 },
+    ausAlign: { min: 0, max: 100, step: 0.1 },
+    ausToWaAlign: { min: 0, max: 100, step: 0.1 },
     entryPointPct: { min: 0, max: 100, step: 0.1 },
     entryLength: { min: 0, max: 1500, step: 1 },
     entryAngle: { min: -180, max: 180, step: 1 },
@@ -56,18 +63,26 @@ export function createDefaultSettings() {
         entrySpeed: 700,
         circleSpeed: 700,
         mapSpeed: 700,
+        ausSpeed: 700,
         exitSpeed: 700,
+        storyboard: "wa",
         direction: 1,
         onCircle: 2.2,
         morphDuration: 1.3,
         morphEasing: "smooth",
         speedBlend: 0.4,
         onMap: 2,
+        ausMorphDuration: 1.3,
+        onAus: 1.8,
+        ausToWaDuration: 1.3,
         pauseDuration: 1.6,
         sceneScale: 1,
         circleRadius: defaultCircleRadius(),
         mapScale: 1,
+        ausScale: 1,
         morphAlignment: 0,
+        ausAlign: 0,
+        ausToWaAlign: 0,
         entryPointPct: 58.2,
         entryLength: 210,
         entryAngle: -25,
@@ -109,6 +124,10 @@ export function mergeSettings(partial) {
         SPEED_MIN,
         Math.min(SPEED_MAX, Number(merged.mapSpeed) || master),
     )
+    merged.ausSpeed = Math.max(
+        SPEED_MIN,
+        Math.min(SPEED_MAX, Number(merged.ausSpeed) || master),
+    )
     merged.exitSpeed = Math.max(
         SPEED_MIN,
         Math.min(SPEED_MAX, Number(merged.exitSpeed) || master),
@@ -117,8 +136,11 @@ export function mergeSettings(partial) {
         merged.entrySpeed = master
         merged.circleSpeed = master
         merged.mapSpeed = master
+        merged.ausSpeed = master
         merged.exitSpeed = master
     }
+    merged.storyboard =
+        merged.storyboard === "australia" ? "australia" : "wa"
     merged.direction = merged.direction === -1 ? -1 : 1
     merged.morphEasing = normalizeEasingId(merged.morphEasing ?? "smooth")
     merged.speedBlend = Math.max(

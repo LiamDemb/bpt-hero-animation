@@ -1,3 +1,5 @@
+import { AUS_PATH_D } from './aus-path.js';
+
 const PATH_MEASURE_EL = typeof document !== 'undefined'
   ? document.createElementNS('http://www.w3.org/2000/svg', 'path')
   : null;
@@ -104,6 +106,34 @@ export function rotatePointsIndex(points, offsetIndex) {
   return [...points.slice(shift), ...points.slice(0, shift)];
 }
 
+/** Signed area in SVG coordinates (y-down); sign indicates traversal winding. */
+export function signedArea2D(points) {
+  let area = 0;
+  const n = points.length;
+  for (let i = 0; i < n; i += 1) {
+    const p = points[i];
+    const q = points[(i + 1) % n];
+    area += p.x * q.y - q.x * p.y;
+  }
+  return area * 0.5;
+}
+
+/** Reverse closed-loop direction while keeping the same start vertex for index-aligned morphs. */
+export function reverseWindingKeepingOrigin(points) {
+  if (points.length <= 1) return points;
+  return [points[0], ...points.slice(1).reverse()];
+}
+
+export function alignWindingTo(reference, points) {
+  const refArea = signedArea2D(reference);
+  const ptsArea = signedArea2D(points);
+  if (refArea === 0 || ptsArea === 0) return points;
+  if (refArea * ptsArea < 0) {
+    return reverseWindingKeepingOrigin(points);
+  }
+  return points;
+}
+
 export function blendPolylines(a, b, t) {
   const n = Math.min(a.length, b.length);
   const points = [];
@@ -162,30 +192,125 @@ export function mix(a, b, t) {
   return a + (b - a) * t;
 }
 
-export function buildShapeContext(settings, waPathD) {
-  const SAMPLE_COUNT = 256;
-  const mapSample = sampleSvgPath(waPathD, SAMPLE_COUNT);
+/**
+ * Map route-space travel (integrated at constant px/s against circle length) onto a
+ * deforming outline whose perimeter may change during morphs.
+ */
+export function outlineRouteDistance(entryFrac, outlineTravel, outlineLength, refLength, direction) {
+  const ref = refLength > 0 ? refLength : outlineLength;
+  const routeS =
+    direction === 1
+      ? entryFrac * ref + outlineTravel
+      : entryFrac * ref - outlineTravel;
+  return ref > 0 ? routeS * (outlineLength / ref) : outlineLength * entryFrac + outlineTravel;
+}
+
+function sampleScaledPathPoints(pathD, scale, sampleCount) {
+  const mapSample = sampleSvgPath(pathD, sampleCount);
   const mapC = boundingBoxCenter(mapSample.points);
   let mapPts = translatePoints(mapSample.points, -mapC.x, -mapC.y);
-  mapPts = scalePoints(mapPts, settings.mapScale, settings.mapScale, { x: 0, y: 0 });
-  const mapResampled = resampleClosedPolyline(mapPts, SAMPLE_COUNT);
+  mapPts = scalePoints(mapPts, scale, scale, { x: 0, y: 0 });
+  const mapResampled = resampleClosedPolyline(mapPts, sampleCount);
+  return { points: mapResampled.points, length: mapResampled.length };
+}
 
+function mapPointsFromPath(pathD, scale, alignPct, sampleCount) {
+  const { points, length } = sampleScaledPathPoints(pathD, scale, sampleCount);
+  const alignShift = Math.round((alignPct / 100) * sampleCount);
+  const mapAligned = rotatePointsIndex(points, alignShift);
+  return { points: mapAligned, length };
+}
+
+function morphCorrespondenceScore(reference, target) {
+  const n = Math.min(reference.length, target.length);
+  let score = 0;
+  for (let i = 0; i < n; i += 1) {
+    score += Math.hypot(reference[i].x - target[i].x, reference[i].y - target[i].y);
+  }
+  return score;
+}
+
+/** Pick index-aligned target that morphs cleanly into reference (winding + reversed loop). */
+export function chooseMorphCorrespondence(reference, target) {
+  const aligned = alignWindingTo(reference, target);
+  const reversed = alignWindingTo(reference, reverseWindingKeepingOrigin(target));
+  return morphCorrespondenceScore(reference, aligned) <= morphCorrespondenceScore(reference, reversed)
+    ? aligned
+    : reversed;
+}
+
+export function isAustraliaStoryboard(settings) {
+  return settings.storyboard === 'australia';
+}
+
+export function buildShapeContext(settings, waPathD, ausPathD = AUS_PATH_D) {
+  const SAMPLE_COUNT = 256;
   const circleSample = sampleCircle(settings.circleRadius, SAMPLE_COUNT);
   const circleResampled = resampleClosedPolyline(circleSample.points, SAMPLE_COUNT);
+  const circlePoints = circleResampled.points;
 
-  const alignShift = Math.round((settings.morphAlignment / 100) * SAMPLE_COUNT);
-  const mapAligned = rotatePointsIndex(mapResampled.points, alignShift);
+  const ausSample = sampleScaledPathPoints(ausPathD, settings.ausScale ?? 1, SAMPLE_COUNT);
+  const ausAlignShift = Math.round(((settings.ausAlign ?? 0) / 100) * SAMPLE_COUNT);
+  const ausBasePts = alignWindingTo(circlePoints, ausSample.points);
+  const ausPoints = rotatePointsIndex(ausBasePts, ausAlignShift);
+
+  const waSample = sampleScaledPathPoints(waPathD, settings.mapScale, SAMPLE_COUNT);
+  const waBasePts = alignWindingTo(circlePoints, waSample.points);
+  const morphAlignShift = Math.round((settings.morphAlignment / 100) * SAMPLE_COUNT);
+  const ausToWaShift = Math.round(((settings.ausToWaAlign ?? 0) / 100) * SAMPLE_COUNT);
+  const mapPoints = rotatePointsIndex(waBasePts, morphAlignShift);
+  let mapPointsFromAus = rotatePointsIndex(waBasePts, ausToWaShift);
+  mapPointsFromAus = chooseMorphCorrespondence(ausPoints, mapPointsFromAus);
 
   return {
     sampleCount: SAMPLE_COUNT,
-    circlePoints: circleResampled.points,
-    mapPoints: mapAligned,
+    circlePoints,
+    ausPoints,
+    mapPoints,
+    mapPointsFromAus,
     circleLength: circleResampled.length,
-    mapLength: mapResampled.length
+    ausLength: polylineLength(ausPoints),
+    mapLength: waSample.length
   };
 }
 
-export function outlineAtTime(shapeCtx, morphProgress) {
-  const t = Math.max(0, Math.min(1, morphProgress));
-  return blendPolylines(shapeCtx.circlePoints, shapeCtx.mapPoints, t);
+export function outlineAtTime(shapeCtx, renderTime, timeline, settings) {
+  const australia = isAustraliaStoryboard(settings);
+  if (!australia) {
+    const { morphStart, morphDuration, morphEased } = timeline;
+    let t = 0;
+    if (renderTime > morphStart) {
+      const raw = (renderTime - morphStart) / Math.max(morphDuration, 0.001);
+      t = morphEased ? morphEased(raw) : Math.max(0, Math.min(1, raw));
+    }
+    return blendPolylines(shapeCtx.circlePoints, shapeCtx.mapPoints, t);
+  }
+
+  const {
+    ausMorphStart,
+    ausMorphDuration,
+    ausHoldEnd,
+    waMorphEnd,
+    waMorphDuration,
+    morphEased
+  } = timeline;
+
+  if (renderTime < ausMorphStart) {
+    return shapeCtx.circlePoints;
+  }
+  if (renderTime < ausMorphStart + ausMorphDuration) {
+    const raw = (renderTime - ausMorphStart) / Math.max(ausMorphDuration, 0.001);
+    const t = morphEased(raw);
+    return blendPolylines(shapeCtx.circlePoints, shapeCtx.ausPoints, t);
+  }
+  if (renderTime < ausHoldEnd) {
+    return shapeCtx.ausPoints;
+  }
+  if (renderTime < waMorphEnd) {
+    const morph2Start = ausHoldEnd;
+    const raw = (renderTime - morph2Start) / Math.max(waMorphDuration, 0.001);
+    const t = morphEased(raw);
+    return blendPolylines(shapeCtx.ausPoints, shapeCtx.mapPointsFromAus, t);
+  }
+  return shapeCtx.mapPointsFromAus;
 }

@@ -15,6 +15,8 @@ export function createPreviewRenderer(rootEl, { aspectFit = 'meet' } = {}) {
   const guideLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   const outlineCircle = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   outlineCircle.setAttribute('class', 'outline-circle');
+  const outlineAus = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  outlineAus.setAttribute('class', 'outline-aus');
   const outlineMap = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   outlineMap.setAttribute('class', 'outline-map');
   const entryGuide = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -28,7 +30,15 @@ export function createPreviewRenderer(rootEl, { aspectFit = 'meet' } = {}) {
   exitMarker.setAttribute('class', 'anchor-marker');
   exitMarker.setAttribute('r', '6');
 
-  guideLayer.append(outlineCircle, outlineMap, entryGuide, exitGuide, entryMarker, exitMarker);
+  guideLayer.append(
+    outlineCircle,
+    outlineAus,
+    outlineMap,
+    entryGuide,
+    exitGuide,
+    entryMarker,
+    exitMarker
+  );
 
   const particleLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   particleLayer.setAttribute('class', 'particle-layer');
@@ -63,17 +73,31 @@ export function createPreviewRenderer(rootEl, { aspectFit = 'meet' } = {}) {
     const cy = frameHeight / 2;
     sceneG.setAttribute('transform', `translate(${cx} ${cy}) scale(${sceneScale})`);
 
+    const showOutlines = settings.showOutlines;
+    const australia = settings.storyboard === 'australia';
+
     outlineCircle.setAttribute('d', polylineToPathD(guides.circleOutline));
     outlineMap.setAttribute('d', polylineToPathD(guides.mapOutline));
-    outlineCircle.setAttribute('opacity', settings.showOutlines ? '0.35' : '0');
-    outlineMap.setAttribute('opacity', settings.showOutlines ? '0.35' : '0');
+    if (guides.ausOutline) {
+      outlineAus.setAttribute('d', polylineToPathD(guides.ausOutline));
+    }
+    outlineCircle.setAttribute('opacity', showOutlines ? '0.35' : '0');
+    outlineMap.setAttribute('opacity', showOutlines ? '0.35' : '0');
+    outlineAus.setAttribute(
+      'opacity',
+      showOutlines && australia && guides.ausOutline ? '0.35' : '0'
+    );
 
     const strokeW = Math.max(2, particleSize * 0.2);
-    outlineCircle.setAttribute('stroke', '#cccccc');
-    outlineMap.setAttribute('stroke', '#cccccc');
+    const stroke = '#cccccc';
+    outlineCircle.setAttribute('stroke', stroke);
+    outlineAus.setAttribute('stroke', stroke);
+    outlineMap.setAttribute('stroke', stroke);
     outlineCircle.setAttribute('fill', 'none');
+    outlineAus.setAttribute('fill', 'none');
     outlineMap.setAttribute('fill', 'none');
     outlineCircle.setAttribute('stroke-width', strokeW);
+    outlineAus.setAttribute('stroke-width', strokeW);
     outlineMap.setAttribute('stroke-width', strokeW);
 
     entryGuide.setAttribute('x1', guides.entryStart.x);

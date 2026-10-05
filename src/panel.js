@@ -72,6 +72,25 @@ function checkbox(id, labelText) {
   return { wrap: label, input };
 }
 
+export function syncStoryboardUi(api, settings) {
+  const sb = settings.storyboard === 'australia' ? 'australia' : 'wa';
+  if (api.storyboardInput) {
+    api.storyboardInput.value = sb;
+  }
+  if (api.storyboardBtnWa) {
+    api.storyboardBtnWa.classList.toggle('is-selected', sb === 'wa');
+  }
+  if (api.storyboardBtnAustralia) {
+    api.storyboardBtnAustralia.classList.toggle('is-selected', sb === 'australia');
+  }
+  api.panelEl?.querySelectorAll('[data-sb-wa]').forEach(node => {
+    node.hidden = sb !== 'wa';
+  });
+  api.panelEl?.querySelectorAll('[data-sb-aus]').forEach(node => {
+    node.hidden = sb !== 'australia';
+  });
+}
+
 export function syncSpeedLinkUi(api, settings) {
   const linked = settings.speedsLinked !== false;
   if (api.speedLinkBtn) {
@@ -83,7 +102,7 @@ export function syncSpeedLinkUi(api, settings) {
   if (api.phaseSpeedsEl) {
     api.phaseSpeedsEl.classList.toggle('is-collapsed', linked);
   }
-  const phaseKeys = ['entrySpeed', 'circleSpeed', 'mapSpeed', 'exitSpeed'];
+  const phaseKeys = ['entrySpeed', 'circleSpeed', 'ausSpeed', 'mapSpeed', 'exitSpeed'];
   for (const key of phaseKeys) {
     const meta = api.bindings[key];
     if (meta?.input) meta.input.disabled = linked;
@@ -107,6 +126,7 @@ export function mountPanel(container, {
   onSpeedLinkToggle
 }) {
   const panel = el('aside', 'controls');
+  const bindings = {};
 
   const header = el('div', 'panel-header');
   const logo = el('img', 'logo');
@@ -114,7 +134,20 @@ export function mountPanel(container, {
   logo.alt = 'Beacon';
   header.append(logo, el('span', 'brand', 'Beacon'));
 
-  panel.append(header);
+  const storyboardInput = document.createElement('input');
+  storyboardInput.type = 'hidden';
+  storyboardInput.id = 'storyboard';
+  storyboardInput.value = 'wa';
+  bindings.storyboard = { input: storyboardInput, kind: 'storyboard' };
+
+  const storyboardSwitch = el('div', 'storyboard-switch');
+  const storyboardBtnWa = el('button', 'storyboard-btn is-selected', 'WA');
+  storyboardBtnWa.type = 'button';
+  const storyboardBtnAustralia = el('button', 'storyboard-btn', 'Australia');
+  storyboardBtnAustralia.type = 'button';
+  storyboardSwitch.append(storyboardBtnWa, storyboardBtnAustralia);
+
+  panel.append(header, storyboardSwitch, storyboardInput);
 
   function section(title) {
     const g = el('div', 'group');
@@ -123,11 +156,11 @@ export function mountPanel(container, {
     return g;
   }
 
-  const bindings = {};
-
-  function addRange(group, label, id, min, max, step, value) {
+  function addRange(group, label, id, min, max, step, value, attrs = {}) {
     const input = range(id, min, max, step, value);
     const { wrap, valueSpan } = controlRow(label, id, input);
+    if (attrs.sbWa) wrap.dataset.sbWa = '1';
+    if (attrs.sbAus) wrap.dataset.sbAus = '1';
     group.append(wrap);
     bindings[id] = { input, valueSpan, kind: 'range' };
     return input;
@@ -164,7 +197,7 @@ export function mountPanel(container, {
   const particles = section('Particles');
   addRange(particles, 'Size', 'particleSize', 2, 60, 1, 20);
   addRange(particles, 'Spacing', 'particleSpacing', 4, 160, 1, 39);
-  addRange(particles, 'Count', 'particleCount', 1, 80, 1, 40);
+  addRange(particles, 'Count', 'particleCount', 1, 200, 1, 40);
   addColor(particles, 'Lead', 'particleColour', '#111111');
   addColor(particles, 'Tail', 'particleEndColour', '#111111');
   addRange(particles, 'Lead opacity', 'particleOpacityStart', 0, 1, 0.01, 1);
@@ -191,6 +224,9 @@ export function mountPanel(container, {
   const phaseSpeedsEl = el('div', 'phase-speeds is-collapsed');
   addRange(phaseSpeedsEl, 'Entry speed', 'entrySpeed', SPEED_MIN, SPEED_MAX, 5, 700);
   addRange(phaseSpeedsEl, 'Circle speed', 'circleSpeed', SPEED_MIN, SPEED_MAX, 5, 700);
+  addRange(phaseSpeedsEl, 'Australia speed', 'ausSpeed', SPEED_MIN, SPEED_MAX, 5, 700, {
+    sbAus: true
+  });
   addRange(phaseSpeedsEl, 'Map speed', 'mapSpeed', SPEED_MIN, SPEED_MAX, 5, 700);
   addRange(phaseSpeedsEl, 'Exit speed', 'exitSpeed', SPEED_MIN, SPEED_MAX, 5, 700);
   motion.append(phaseSpeedsEl);
@@ -202,7 +238,14 @@ export function mountPanel(container, {
     { value: -1, label: 'Reverse' }
   ], 1);
   addRange(motion, 'On circle', 'onCircle', 0, 10, 0.1, 2.2);
-  addRange(motion, 'Morph', 'morphDuration', 0.1, 10, 0.1, 1.3);
+  addRange(motion, 'Morph', 'morphDuration', 0.1, 10, 0.1, 1.3, { sbWa: true });
+  addRange(motion, 'Morph to Australia', 'ausMorphDuration', 0.1, 10, 0.1, 1.3, {
+    sbAus: true
+  });
+  addRange(motion, 'On Australia', 'onAus', 0, 10, 0.1, 1.8, { sbAus: true });
+  addRange(motion, 'Morph to WA', 'ausToWaDuration', 0.1, 10, 0.1, 1.3, {
+    sbAus: true
+  });
   addRange(motion, 'On map', 'onMap', 0, 10, 0.1, 2);
   addRange(motion, 'Pause', 'pauseDuration', 0, 10, 0.1, 1.6);
   addRange(motion, 'Speed blend', 'speedBlend', 0, 3, 0.05, 0.4);
@@ -210,8 +253,11 @@ export function mountPanel(container, {
   const shape = section('Shape');
   addRange(shape, 'Scene scale', 'sceneScale', 0.1, 3, 0.01, 1);
   addRange(shape, 'Circle radius', 'circleRadius', 50, 800, 1, 247);
+  addRange(shape, 'Australia scale', 'ausScale', 0.2, 3, 0.01, 1, { sbAus: true });
+  addRange(shape, 'Australia align', 'ausAlign', 0, 100, 0.1, 0, { sbAus: true });
   addRange(shape, 'Map scale', 'mapScale', 0.2, 3, 0.01, 1);
-  addRange(shape, 'Morph align', 'morphAlignment', 0, 100, 0.1, 0);
+  addRange(shape, 'Morph align', 'morphAlignment', 0, 100, 0.1, 0, { sbWa: true });
+  addRange(shape, 'WA align', 'ausToWaAlign', 0, 100, 0.1, 0, { sbAus: true });
 
   const entry = section('Entry');
   addRange(entry, 'Point', 'entryPointPct', 0, 100, 0.1, 58.2);
@@ -345,7 +391,27 @@ export function mountPanel(container, {
   exportEmbed.addEventListener('click', () => onExportEmbed?.());
   copyEmbed.addEventListener('click', () => onCopyEmbed?.());
 
+  function setStoryboard(value) {
+    storyboardInput.value = value === 'australia' ? 'australia' : 'wa';
+    syncStoryboardUi(
+      {
+        storyboardInput,
+        storyboardBtnWa,
+        storyboardBtnAustralia,
+        panelEl: panel
+      },
+      { storyboard: storyboardInput.value }
+    );
+    onChange();
+  }
+  storyboardBtnWa.addEventListener('click', () => setStoryboard('wa'));
+  storyboardBtnAustralia.addEventListener('click', () => setStoryboard('australia'));
+
   return {
+    panelEl: panel,
+    storyboardInput,
+    storyboardBtnWa,
+    storyboardBtnAustralia,
     bindings,
     playBtn,
     statsEl: stats,
@@ -377,6 +443,8 @@ export function readSettingsFromPanel(bindings, baseSettings) {
       s[key] = Number(input.value);
     } else if (key === 'exportQuality') {
       s[key] = input.value;
+    } else if (key === 'storyboard') {
+      s[key] = input.value === 'australia' ? 'australia' : 'wa';
     } else if (meta.kind === 'color') {
       s[key] = input.value;
     } else {
@@ -422,17 +490,24 @@ export function formattersForSettings(settings) {
     speed: s => `${s.speed}px/s`,
     entrySpeed: s => `${s.entrySpeed}px/s`,
     circleSpeed: s => `${s.circleSpeed}px/s`,
+    ausSpeed: s => `${s.ausSpeed}px/s`,
     mapSpeed: s => `${s.mapSpeed}px/s`,
     exitSpeed: s => `${s.exitSpeed}px/s`,
     onCircle: s => `${s.onCircle.toFixed(1)}s`,
     morphDuration: s => `${s.morphDuration.toFixed(1)}s`,
+    ausMorphDuration: s => `${s.ausMorphDuration.toFixed(1)}s`,
+    onAus: s => `${s.onAus.toFixed(1)}s`,
+    ausToWaDuration: s => `${s.ausToWaDuration.toFixed(1)}s`,
     onMap: s => `${s.onMap.toFixed(1)}s`,
     pauseDuration: s => `${s.pauseDuration.toFixed(1)}s`,
     speedBlend: s => `${s.speedBlend.toFixed(2)}s`,
     sceneScale: s => s.sceneScale.toFixed(2),
     circleRadius: s => `${Math.round(s.circleRadius)}`,
     mapScale: s => s.mapScale.toFixed(2),
+    ausScale: s => s.ausScale.toFixed(2),
     morphAlignment: s => `${s.morphAlignment.toFixed(1)}%`,
+    ausAlign: s => `${s.ausAlign.toFixed(1)}%`,
+    ausToWaAlign: s => `${s.ausToWaAlign.toFixed(1)}%`,
     entryPointPct: s => `${s.entryPointPct.toFixed(1)}%`,
     entryLength: s => `${s.entryLength}px`,
     entryAngle: s => `${s.entryAngle}°`,
