@@ -12,7 +12,7 @@ function readPng(path) {
       const g = data[i + 1];
       const b = data[i + 2];
       const a = data[i + 3];
-      mask[y * w + x] = a > 128 && r + g + b < 600 ? 1 : 0;
+      mask[y * w + x] = a > 16 && r + g + b < 780 ? 1 : 0;
     }
   }
   return { w, h, mask };
@@ -164,14 +164,41 @@ function toPathD(points) {
   return `${d}Z`;
 }
 
+function dilateMask(mask, w, h, iterations) {
+  let cur = mask;
+  for (let n = 0; n < iterations; n += 1) {
+    const next = new Uint8Array(w * h);
+    for (let y = 0; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        let on = 0;
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dx = -1; dx <= 1; dx += 1) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && ny >= 0 && nx < w && ny < h && cur[ny * w + nx]) on = 1;
+          }
+        }
+        next[y * w + x] = on;
+      }
+    }
+    cur = next;
+  }
+  return cur;
+}
+
 const pngPath =
   process.argv[2] ||
-  '/Users/liamdemb/.cursor/projects/Users-liamdemb-Projects-Beacon-Proton-Therapy-bpt-hero-animation/assets/Vector-9dda2ce6-621e-4ad2-8a0d-aacb2cc27074.png';
-const { w, h, mask } = readPng(pngPath);
+  '/Users/liamdemb/.cursor/projects/Users-liamdemb-Projects-Beacon-Proton-Therapy-bpt-hero-animation/assets/Vector_9-e5ccc2e4-048e-403a-9f98-47bc3d5f8448.png';
+const { w, h, mask: strokeMask } = readPng(pngPath);
+const mask = dilateMask(strokeMask, w, h, 5);
 const components = findComponents(mask, w, h);
 const ranked = components
   .map(c => ({ c, box: bbox(c) }))
   .sort((a, b) => b.box.area - a.box.area);
+if (!ranked.length) {
+  console.error('No components found in silhouette');
+  process.exit(1);
+}
 const mainland = ranked[0].c;
 const contour = traceBoundary(mask, w, h, mainland);
 const simplified = simplify(contour, 2.5);
